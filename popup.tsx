@@ -9,15 +9,6 @@ function IndexPopup() {
   const [error, setError] = useState("")
   const [currentUrl, setCurrentUrl] = useState("")
 
-  useEffect(() => {
-    // Get current tab URL
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.url) {
-        setCurrentUrl(tabs[0].url)
-      }
-    })
-  }, [])
-
   const extractContent = async () => {
     try {
       setIsLoading(true)
@@ -156,7 +147,7 @@ ${turndownService.turndown(content)}`
           })
         })
 
-        if (!dpasteResponse.ok) {
+        if (dpasteResponse.ok) {
           const dpasteUrl = await dpasteResponse.text()
           if (dpasteUrl.trim().includes("https://dpaste.org/")) {
             let shareableUrl = dpasteUrl.trim()
@@ -220,6 +211,17 @@ ${turndownService.turndown(content)}`
     }
   }
 
+  useEffect(() => {
+    // Get current tab URL and auto-extract content when popup opens
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.url) {
+        setCurrentUrl(tabs[0].url)
+        // Automatically extract content when popup opens
+        extractContent()
+      }
+    })
+  }, [])
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -234,7 +236,7 @@ ${turndownService.turndown(content)}`
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "webpage-content.md"
+    a.download = `webpage-content-zip-${new Date().toISOString()}.md`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -291,7 +293,7 @@ ${turndownService.turndown(content)}`
           cursor: isLoading ? "not-allowed" : "pointer",
           marginBottom: 16
         }}>
-        {isLoading ? "Extracting..." : "Extract Content"}
+        {isLoading ? "Extracting..." : "Re-extract Content"}
       </button>
 
       {error && (
