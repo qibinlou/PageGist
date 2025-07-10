@@ -320,7 +320,7 @@ ${turndownService.turndown(content)}`
               onClick={() => copyToClipboard(markdown)}
               variant="outline"
               size="sm"
-              className="flex-1 hover:bg-primary">
+              className="flex-1 hover:bg-blue-300">
               <Copy className="mr-2 h-3 w-3" />
               Copy Markdown
             </Button>
@@ -328,7 +328,7 @@ ${turndownService.turndown(content)}`
               onClick={downloadMarkdown}
               variant="outline"
               size="sm"
-              className="flex-1">
+              className="flex-1 hover:bg-blue-300">
               <Download className="mr-2 h-3 w-3" />
               Download
             </Button>
