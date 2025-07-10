@@ -140,10 +140,79 @@ ${turndownService.turndown(content)}`
 
       setMarkdown(markdownContent)
 
-      // Generate shareable link (using a simple base64 encoding for demo)
-      const encodedMarkdown = btoa(encodeURIComponent(markdownContent))
-      const shareableUrl = `data:text/markdown;base64,${encodedMarkdown}`
-      setShareUrl(shareableUrl)
+      // Generate shareable link using a public paste service
+      try {
+        // Try dpaste.org first (no API key required)
+        const dpasteResponse = await fetch("https://dpaste.org/api/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: new URLSearchParams({
+            content: markdownContent,
+            title: `${title} - Web Page Content`,
+            syntax: "markdown",
+            expiry_days: "30"
+          })
+        })
+
+        if (!dpasteResponse.ok) {
+          const dpasteUrl = await dpasteResponse.text()
+          if (dpasteUrl.trim().includes("https://dpaste.org/")) {
+            let shareableUrl = dpasteUrl.trim()
+            shareableUrl =
+              shareableUrl.substring(1, shareableUrl.length - 1) + "/raw" // Remove surrounding quotes
+            setShareUrl(shareableUrl)
+          } else {
+            throw new Error("Invalid dpaste response")
+          }
+        } else {
+          throw new Error(`dpaste API error: ${dpasteResponse.status}`)
+        }
+      } catch (dpasteError) {
+        console.warn("Failed to create dpaste link:", dpasteError)
+
+        // Fallback: try paste.ee (also no API key required)
+        try {
+          const pasteeeResponse = await fetch(
+            "https://api.paste.ee/v1/pastes",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                description: `${title} - Web Page Content`,
+                sections: [
+                  {
+                    name: "content",
+                    syntax: "markdown",
+                    contents: markdownContent
+                  }
+                ]
+              })
+            }
+          )
+
+          if (pasteeeResponse.ok) {
+            const pasteeeData = await pasteeeResponse.json()
+            if (pasteeeData.link) {
+              setShareUrl(pasteeeData.link)
+            } else {
+              throw new Error("No link in paste.ee response")
+            }
+          } else {
+            throw new Error(`paste.ee API error: ${pasteeeResponse.status}`)
+          }
+        } catch (pasteeeError) {
+          console.warn("Failed to create paste.ee link:", pasteeeError)
+
+          // Final fallback to base64 data URL
+          const encodedMarkdown = btoa(encodeURIComponent(markdownContent))
+          const shareableUrl = `data:text/markdown;base64,${encodedMarkdown}`
+          setShareUrl(shareableUrl)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
     } finally {
@@ -338,8 +407,9 @@ ${turndownService.turndown(content)}`
                 </button>
               </div>
               <p style={{ margin: "8px 0 0 0", fontSize: 10, color: "#666" }}>
-                This link contains the markdown content and can be shared with
-                AI assistants like ChatGPT or Gemini.
+                This link hosts the markdown content on a public paste service
+                and can be easily shared with AI assistants like ChatGPT or
+                Gemini.
               </p>
             </div>
           )}
