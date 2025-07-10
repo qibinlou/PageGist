@@ -1,6 +1,20 @@
 import { Readability } from "@mozilla/readability"
+import { Copy, Download, ExternalLink, FileText, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import TurndownService from "turndown"
+
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Button } from "~/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "~/components/ui/card"
+import { Input } from "~/components/ui/input"
+
+import "~/globals.css"
 
 function IndexPopup() {
   const [isLoading, setIsLoading] = useState(false)
@@ -244,176 +258,108 @@ ${turndownService.turndown(content)}`
   }
 
   return (
-    <div
-      style={{
-        width: 400,
-        padding: 20,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        fontSize: 14
-      }}>
-      <div style={{ marginBottom: 20 }}>
-        <h2
-          style={{ margin: 0, marginBottom: 8, fontSize: 18, fontWeight: 600 }}>
-          Web Page Zipper
-        </h2>
-        <p style={{ margin: 0, color: "#666", fontSize: 12 }}>
-          Extract webpage content as markdown
-        </p>
-      </div>
+    <div className="w-[400px] p-5 bg-background text-foreground">
+      <CardHeader className="px-0 pb-5">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">Web Page Zipper</CardTitle>
+        </div>
+        <CardDescription>Extract webpage content as markdown</CardDescription>
+      </CardHeader>
 
       {currentUrl && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: 8,
-            backgroundColor: "#f5f5f5",
-            borderRadius: 4
-          }}>
-          <div style={{ fontSize: 11, color: "#666", marginBottom: 4 }}>
-            Current page:
-          </div>
-          <div style={{ fontSize: 12, wordBreak: "break-all" }}>
-            {currentUrl}
-          </div>
-        </div>
+        <Card className="mb-4">
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">
+              Current page:
+            </div>
+            <div className="text-sm break-all">{currentUrl}</div>
+          </CardContent>
+        </Card>
       )}
 
-      <button
+      <Button
         onClick={extractContent}
         disabled={isLoading}
-        style={{
-          width: "100%",
-          padding: "12px 16px",
-          backgroundColor: isLoading ? "#ccc" : "#007acc",
-          color: "white",
-          border: "none",
-          borderRadius: 6,
-          fontSize: 14,
-          fontWeight: 500,
-          cursor: isLoading ? "not-allowed" : "pointer",
-          marginBottom: 16
-        }}>
-        {isLoading ? "Extracting..." : "Re-extract Content"}
-      </button>
+        className="w-full mb-4"
+        size="lg">
+        {isLoading ? (
+          <>
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            Extracting...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Re-extract Content
+          </>
+        )}
+      </Button>
 
       {error && (
-        <div
-          style={{
-            padding: 12,
-            backgroundColor: "#fee",
-            border: "1px solid #fcc",
-            borderRadius: 4,
-            color: "#c33",
-            fontSize: 12,
-            marginBottom: 16
-          }}>
-          {error}
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {markdown && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 12 }}>
-            <h3
-              style={{
-                margin: 0,
-                marginBottom: 8,
-                fontSize: 14,
-                fontWeight: 600
-              }}>
-              Extracted Content
-            </h3>
-            <div
-              style={{
-                maxHeight: 200,
-                overflow: "auto",
-                padding: 8,
-                backgroundColor: "#f9f9f9",
-                border: "1px solid #ddd",
-                borderRadius: 4,
-                fontSize: 11,
-                fontFamily: "Monaco, monospace",
-                whiteSpace: "pre-wrap"
-              }}>
-              {markdown}
-            </div>
-          </div>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Extracted Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-48 overflow-auto p-3 bg-muted rounded-md border text-xs font-mono whitespace-pre-wrap">
+                {markdown}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button
+          <div className="flex gap-2">
+            <Button
               onClick={() => copyToClipboard(markdown)}
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: 4,
-                fontSize: 12,
-                cursor: "pointer"
-              }}>
+              variant="outline"
+              size="sm"
+              className="flex-1 hover:bg-primary">
+              <Copy className="mr-2 h-3 w-3" />
               Copy Markdown
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={downloadMarkdown}
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                backgroundColor: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: 4,
-                fontSize: 12,
-                cursor: "pointer"
-              }}>
+              variant="outline"
+              size="sm"
+              className="flex-1">
+              <Download className="mr-2 h-3 w-3" />
               Download
-            </button>
+            </Button>
           </div>
 
           {shareUrl && (
-            <div>
-              <h4
-                style={{
-                  margin: 0,
-                  marginBottom: 8,
-                  fontSize: 12,
-                  fontWeight: 600
-                }}>
-                Shareable Link:
-              </h4>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  value={shareUrl}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: "6px 8px",
-                    border: "1px solid #ddd",
-                    borderRadius: 4,
-                    fontSize: 11,
-                    backgroundColor: "#f9f9f9"
-                  }}
-                />
-                <button
-                  onClick={() => copyToClipboard(shareUrl)}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "#17a2b8",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 4,
-                    fontSize: 11,
-                    cursor: "pointer"
-                  }}>
-                  Copy
-                </button>
-              </div>
-              <p style={{ margin: "8px 0 0 0", fontSize: 10, color: "#666" }}>
-                This link hosts the markdown content on a public paste service
-                and can be easily shared with AI assistants like ChatGPT or
-                Gemini.
-              </p>
-            </div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs">Shareable Link:</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={shareUrl}
+                    readOnly
+                    className="text-xs bg-muted"
+                  />
+                  <Button
+                    onClick={() => copyToClipboard(shareUrl)}
+                    variant="outline"
+                    size="sm">
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This link hosts the markdown content on a public paste service
+                  and can be easily shared with AI assistants like ChatGPT or
+                  Gemini.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
