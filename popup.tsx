@@ -1,5 +1,12 @@
 import { Readability } from "@mozilla/readability"
-import { Copy, Download, ExternalLink, FileText, RefreshCw } from "lucide-react"
+import {
+  Copy,
+  Download,
+  ExternalLink,
+  FileText,
+  RefreshCw,
+  Share
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import TurndownService from "turndown"
 
@@ -18,6 +25,7 @@ import "~/globals.css"
 
 function IndexPopup() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false)
   const [markdown, setMarkdown] = useState("")
   const [shareUrl, setShareUrl] = useState("")
   const [error, setError] = useState("")
@@ -144,6 +152,23 @@ function IndexPopup() {
 ${turndownService.turndown(content)}`
 
       setMarkdown(markdownContent)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const generateShareLink = async () => {
+    if (!markdown) return
+
+    try {
+      setIsGeneratingShareLink(true)
+      setError("")
+
+      // Get the title from the markdown content
+      const titleMatch = markdown.match(/# (.+)/)
+      const title = titleMatch ? titleMatch[1] : "Web Page Content"
 
       // Generate shareable link using a public paste service
       try {
@@ -154,7 +179,7 @@ ${turndownService.turndown(content)}`
             "Content-Type": "application/x-www-form-urlencoded"
           },
           body: new URLSearchParams({
-            content: markdownContent,
+            content: markdown,
             title: `${title} - Web Page Content`,
             syntax: "markdown",
             expiry_days: "30"
@@ -192,7 +217,7 @@ ${turndownService.turndown(content)}`
                   {
                     name: "content",
                     syntax: "markdown",
-                    contents: markdownContent
+                    contents: markdown
                   }
                 ]
               })
@@ -213,7 +238,7 @@ ${turndownService.turndown(content)}`
           console.warn("Failed to create paste.ee link:", pasteeeError)
 
           // Final fallback to base64 data URL
-          const encodedMarkdown = btoa(encodeURIComponent(markdownContent))
+          const encodedMarkdown = btoa(encodeURIComponent(markdown))
           const shareableUrl = `data:text/markdown;base64,${encodedMarkdown}`
           setShareUrl(shareableUrl)
         }
@@ -221,7 +246,7 @@ ${turndownService.turndown(content)}`
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
     } finally {
-      setIsLoading(false)
+      setIsGeneratingShareLink(false)
     }
   }
 
@@ -258,7 +283,7 @@ ${turndownService.turndown(content)}`
   }
 
   return (
-    <div className="w-[400px] p-5 bg-background text-foreground">
+    <div className="w-[400px] min-h-[600px] max-h-[800px] p-5 bg-background text-foreground overflow-y-auto">
       <CardHeader className="px-0 pb-5">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
@@ -322,7 +347,7 @@ ${turndownService.turndown(content)}`
               size="sm"
               className="flex-1 hover:bg-blue-300">
               <Copy className="mr-2 h-3 w-3" />
-              Copy Markdown
+              Copy
             </Button>
             <Button
               onClick={downloadMarkdown}
@@ -331,6 +356,24 @@ ${turndownService.turndown(content)}`
               className="flex-1 hover:bg-blue-300">
               <Download className="mr-2 h-3 w-3" />
               Download
+            </Button>
+            <Button
+              onClick={generateShareLink}
+              disabled={isGeneratingShareLink}
+              variant="outline"
+              size="sm"
+              className="flex-1 hover:bg-green-300">
+              {isGeneratingShareLink ? (
+                <>
+                  <RefreshCw className="mr-2 h-3 w-3 animate-spin" />
+                  Sharing...
+                </>
+              ) : (
+                <>
+                  <Share className="mr-2 h-3 w-3" />
+                  Share
+                </>
+              )}
             </Button>
           </div>
 
