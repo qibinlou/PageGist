@@ -20,6 +20,7 @@ import {
   CardTitle
 } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
+import TwitterTweetPageParser from "~/lib/TwitterTweetPageParser"
 
 import "~/globals.css"
 
@@ -66,36 +67,90 @@ function IndexPopup() {
 
       const { html, url, title: pageTitle } = results[0].result
 
-      // Use Readability to extract main content from the HTML
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(html, "text/html")
+      // Check if we're on X.com (Twitter) and use specialized parser
+      const urlObj = new URL(url)
+      const isTwitter =
+        urlObj.hostname === "x.com" || urlObj.hostname === "twitter.com"
 
       let title = pageTitle
       let content = ""
       let byline = ""
       let excerpt = ""
 
-      try {
-        // Use Readability to extract main content
-        const reader = new Readability(doc, {
-          debug: false,
-          // charThreshold: 500,
-          classesToPreserve: ["highlight", "code", "pre"]
-        })
+      if (isTwitter) {
+        console.debug(
+          "Detected Twitter/X.com page, using TwitterTweetPageParser"
+        )
+        try {
+          const tweets = TwitterTweetPageParser.parse(html)
+          title = `Tweets from ${pageTitle}`
 
-        const article = reader.parse()
+          // Convert tweets array to HTML content
+          if (tweets.length > 0) {
+            content = tweets
+              .map(
+                (tweet, index) =>
+                  `<div class="tweet"><h3>Tweet ${index + 1}</h3><p>${tweet}</p></div>`
+              )
+              .join("\n")
+            excerpt = `Extracted ${tweets.length} tweet(s)`
+          } else {
+            content = "<p>No tweets found on this page.</p>"
+            excerpt = "No tweets found"
+          }
+        } catch (error) {
+          console.error("TwitterTweetPageParser failed:", error)
+          // Fallback to regular parsing for Twitter
+          content =
+            "<p>Failed to parse tweets, falling back to regular extraction.</p>"
+        }
+      }
 
-        if (article) {
-          console.debug("Readability article:", article)
-          title = article.title || pageTitle
-          content = article.content
-          byline = article.byline || ""
-          excerpt = article.excerpt || ""
-        } else {
-          console.warn(
-            "Readability could not parse the article, falling back to simple extraction."
-          )
-          // Fallback to simple extraction if Readability fails
+      if (!isTwitter || !content) {
+        // Use Readability to extract main content from the HTML
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(html, "text/html")
+
+        try {
+          // Use Readability to extract main content
+          const reader = new Readability(doc, {
+            debug: false,
+            // charThreshold: 500,
+            classesToPreserve: ["highlight", "code", "pre"]
+          })
+
+          const article = reader.parse()
+
+          if (article) {
+            console.debug("Readability article:", article)
+            title = article.title || pageTitle
+            content = article.content
+            byline = article.byline || ""
+            excerpt = article.excerpt || ""
+          } else {
+            console.warn(
+              "Readability could not parse the article, falling back to simple extraction."
+            )
+            // Fallback to simple extraction if Readability fails
+            const mainElement = doc.querySelector(
+              'main, article, [role="main"], .main-content, .content'
+            )
+            if (mainElement) {
+              content = mainElement.innerHTML
+            } else {
+              const bodyClone = doc.body?.cloneNode(true) as HTMLElement
+              if (bodyClone) {
+                const elementsToRemove = bodyClone.querySelectorAll(
+                  "nav, header, footer, aside, .sidebar, .nav, .navigation, .menu, script, style"
+                )
+                elementsToRemove.forEach((el) => el.remove())
+                content = bodyClone.innerHTML
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Readability extraction failed:", error)
+          // Fallback to simple extraction
           const mainElement = doc.querySelector(
             'main, article, [role="main"], .main-content, .content'
           )
@@ -110,24 +165,6 @@ function IndexPopup() {
               elementsToRemove.forEach((el) => el.remove())
               content = bodyClone.innerHTML
             }
-          }
-        }
-      } catch (error) {
-        console.error("Readability extraction failed:", error)
-        // Fallback to simple extraction
-        const mainElement = doc.querySelector(
-          'main, article, [role="main"], .main-content, .content'
-        )
-        if (mainElement) {
-          content = mainElement.innerHTML
-        } else {
-          const bodyClone = doc.body?.cloneNode(true) as HTMLElement
-          if (bodyClone) {
-            const elementsToRemove = bodyClone.querySelectorAll(
-              "nav, header, footer, aside, .sidebar, .nav, .navigation, .menu, script, style"
-            )
-            elementsToRemove.forEach((el) => el.remove())
-            content = bodyClone.innerHTML
           }
         }
       }
