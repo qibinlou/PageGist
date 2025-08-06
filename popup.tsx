@@ -1,14 +1,5 @@
-import { Readability } from "@mozilla/readability"
-import {
-  Copy,
-  Download,
-  ExternalLink,
-  FileText,
-  RefreshCw,
-  Share
-} from "lucide-react"
+import { Copy, Download, FileText, RefreshCw, Share } from "lucide-react"
 import { useEffect, useState } from "react"
-import TurndownService from "turndown"
 
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { Button } from "~/components/ui/button"
@@ -20,9 +11,13 @@ import {
   CardTitle
 } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
-import TwitterTweetPageParser from "~/lib/TwitterTweetPageParser"
+import TwitterTweetPageParser from "~lib/parsers/TwitterTweetPageParser"
 
 import "~/globals.css"
+
+import MarkdownParser from "~lib/parsers/MarkdownParser"
+import ReadbilityParser from "~lib/parsers/ReadbilityParser"
+import RedditParser from "~lib/parsers/RedditParser"
 
 function IndexPopup() {
   const [isLoading, setIsLoading] = useState(false)
@@ -72,8 +67,11 @@ function IndexPopup() {
       const isTwitter =
         urlObj.hostname === "x.com" || urlObj.hostname === "twitter.com"
 
+      const isReddit = urlObj.hostname.includes("reddit.com")
+
       let title = pageTitle
       let content = ""
+      let contentAsText = null
       let byline = ""
       let excerpt = ""
 
@@ -82,12 +80,12 @@ function IndexPopup() {
           "Detected Twitter/X.com page, using TwitterTweetPageParser"
         )
         try {
-          const tweets = TwitterTweetPageParser.parse(html)
+          const tweets = TwitterTweetPageParser.getInstance().parse(html)
           title = `Tweets from ${pageTitle}`
 
           // Convert tweets array to HTML content
           if (tweets.length > 0) {
-            content = tweets
+            contentAsText = tweets
               .map(
                 (tweet, index) =>
                   `<div class="tweet"><h3>Tweet ${index + 1}</h3><p>${tweet}</p></div>`
@@ -100,93 +98,34 @@ function IndexPopup() {
           }
         } catch (error) {
           console.error("TwitterTweetPageParser failed:", error)
-          // Fallback to regular parsing for Twitter
-          content =
-            "<p>Failed to parse tweets, falling back to regular extraction.</p>"
+          contentAsText = null
         }
       }
 
-      if (!isTwitter || !content) {
-        // Use Readability to extract main content from the HTML
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(html, "text/html")
-
+      if (isReddit) {
+        console.debug("Detected Reddit page, using RedditParser")
         try {
-          // Use Readability to extract main content
-          const reader = new Readability(doc, {
-            debug: false,
-            // charThreshold: 500,
-            classesToPreserve: ["highlight", "code", "pre"]
-          })
-
-          const article = reader.parse()
-
-          if (article) {
-            console.debug("Readability article:", article)
-            title = article.title || pageTitle
-            content = article.content
-            byline = article.byline || ""
-            excerpt = article.excerpt || ""
-          } else {
-            console.warn(
-              "Readability could not parse the article, falling back to simple extraction."
-            )
-            // Fallback to simple extraction if Readability fails
-            const mainElement = doc.querySelector(
-              'main, article, [role="main"], .main-content, .content'
-            )
-            if (mainElement) {
-              content = mainElement.innerHTML
-            } else {
-              const bodyClone = doc.body?.cloneNode(true) as HTMLElement
-              if (bodyClone) {
-                const elementsToRemove = bodyClone.querySelectorAll(
-                  "nav, header, footer, aside, .sidebar, .nav, .navigation, .menu, script, style"
-                )
-                elementsToRemove.forEach((el) => el.remove())
-                content = bodyClone.innerHTML
-              }
-            }
-          }
+          const redditContent = RedditParser.getInstance().parse(html)
+          contentAsText = redditContent
         } catch (error) {
-          console.error("Readability extraction failed:", error)
-          // Fallback to simple extraction
-          const mainElement = doc.querySelector(
-            'main, article, [role="main"], .main-content, .content'
-          )
-          if (mainElement) {
-            content = mainElement.innerHTML
-          } else {
-            const bodyClone = doc.body?.cloneNode(true) as HTMLElement
-            if (bodyClone) {
-              const elementsToRemove = bodyClone.querySelectorAll(
-                "nav, header, footer, aside, .sidebar, .nav, .navigation, .menu, script, style"
-              )
-              elementsToRemove.forEach((el) => el.remove())
-              content = bodyClone.innerHTML
-            }
-          }
+          console.error("RedditParser failed:", error)
+          contentAsText = null
         }
       }
 
-      // Convert HTML to Markdown using Turndown
-      const turndownService = new TurndownService({
-        headingStyle: "atx",
-        codeBlockStyle: "fenced"
-      })
+      // Use ReadbilityParser to extract main content from the HTML
+      const result = ReadbilityParser.getInstance().parse(html)
+      title = title || result.title || pageTitle
+      content = content || result.content
+      byline = byline || result.byline
+      excerpt = excerpt || result.excerpt
 
-      // Add custom rules for better markdown conversion
-      turndownService.addRule("removeUnwantedElements", {
-        filter: ["script", "style", "nav", "footer", "aside"],
-        replacement: () => ""
-      })
-
-      const markdownContent = `**Source:** ${url}${byline ? `\n**Author:** ${byline}` : ""}${excerpt ? `\n\n**Summary:** ${excerpt}` : ""}
+      const markdownContent = `**Source:** ${url}${byline ? `\n**Author:** ${byline}` : ""}${excerpt ? `\n\n**Summary:** ${excerpt}` : ""}\n
 ------
 
 # ${title}
 
-${turndownService.turndown(content)}`
+${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
 
       setMarkdown(markdownContent)
     } catch (err) {
