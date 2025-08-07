@@ -330,12 +330,14 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
 
       {markdown && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="border-0 shadow-none">
+            <CardHeader className="pb-3 px-0">
               <CardTitle className="text-sm">Extracted Content</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="max-h-48 overflow-auto p-3 bg-muted rounded-md border text-xs font-mono whitespace-pre-wrap">
+            <CardContent className="px-0">
+              <div
+                className="max-h-48 overflow-auto p-3 bg-muted rounded-md border text-xs font-mono whitespace-pre-wrap"
+                contentEditable>
                 {markdown}
               </div>
             </CardContent>
