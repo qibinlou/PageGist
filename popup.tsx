@@ -283,19 +283,26 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
           <FileText className="h-5 w-5 text-primary" />
           <CardTitle className="text-lg">Web Page Zipper</CardTitle>
         </div>
-        <CardDescription>Extract webpage content as markdown</CardDescription>
+        <CardDescription>
+          Extract current webpage content as markdown
+        </CardDescription>
       </CardHeader>
 
-      {currentUrl && (
+      {/* {currentUrl && (
         <Card className="mb-4">
           <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground mb-1">
+            <div className="text-sm text-muted-foreground mb-1">
               Current page:
+              <span
+                className="text-xs break-all line-clamp-2 overflow-clip"
+                title={currentUrl}
+                aria-description={currentUrl}>
+                {currentUrl}
+              </span>
             </div>
-            <div className="text-sm break-all">{currentUrl}</div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       <Button
         onClick={extractContent}
