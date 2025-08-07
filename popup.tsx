@@ -401,8 +401,7 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
                 </div>
                 <p className="text-xs text-muted-foreground">
                   This link hosts the markdown content on a public paste service
-                  and can be easily shared with AI assistants like ChatGPT or
-                  Gemini.
+                  and can easily be shared with AI assistants such as ChatGPT or Gemini.
                 </p>
               </CardContent>
             </Card>
