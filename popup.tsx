@@ -18,6 +18,7 @@ import "~/globals.css"
 import MarkdownParser from "~lib/parsers/MarkdownParser"
 import ReadbilityParser from "~lib/parsers/ReadbilityParser"
 import RedditParser from "~lib/parsers/RedditParser"
+import XiaohongshuParser from "~lib/parsers/XiaoHongShuParser"
 
 function IndexPopup() {
   const [isLoading, setIsLoading] = useState(false)
@@ -68,6 +69,7 @@ function IndexPopup() {
         urlObj.hostname === "x.com" || urlObj.hostname === "twitter.com"
 
       const isReddit = urlObj.hostname.includes("reddit.com")
+      const isXhs = urlObj.hostname.includes("xiaohongshu.com")
 
       let title = pageTitle
       let content = ""
@@ -80,20 +82,18 @@ function IndexPopup() {
           "Detected Twitter/X.com page, using TwitterTweetPageParser"
         )
         try {
-          const tweets = TwitterTweetPageParser.getInstance().parse(html)
+          const tweetsText = TwitterTweetPageParser.getInstance().parse(html)
           title = `Tweets from ${pageTitle}`
 
-          // Convert tweets array to HTML content
-          if (tweets.length > 0) {
-            contentAsText = tweets
-              .map(
-                (tweet, index) =>
-                  `<div class="tweet"><h3>Tweet ${index + 1}</h3><p>${tweet}</p></div>`
-              )
-              .join("\n")
-            excerpt = `Extracted ${tweets.length} tweet(s)`
+          // Use the parsed tweets text directly
+          if (tweetsText && tweetsText.trim()) {
+            contentAsText = tweetsText
+            const tweetCount = tweetsText
+              .split("\n")
+              .filter((line) => line.trim()).length
+            excerpt = `Extracted ${tweetCount} tweet(s)`
           } else {
-            content = "<p>No tweets found on this page.</p>"
+            contentAsText = "No tweets found on this page."
             excerpt = "No tweets found"
           }
         } catch (error) {
@@ -113,12 +113,30 @@ function IndexPopup() {
         }
       }
 
+      if (isXhs) {
+        console.debug("Detected XiaoHongShu page, using XiaohongshuParser")
+        try {
+          const xhsContent = XiaohongshuParser.getInstance().parse(html)
+          contentAsText = xhsContent
+        } catch (error) {
+          console.error("XiaohongshuParser failed:", error)
+          contentAsText = null
+        }
+      }
+
       // Use ReadbilityParser to extract main content from the HTML
-      const result = ReadbilityParser.getInstance().parse(html)
+      const result = ReadbilityParser.getInstance().parse(html, {
+        baseUrl: url
+      })
       title = title || result.title || pageTitle
       content = content || result.content
       byline = byline || result.byline
       excerpt = excerpt || result.excerpt
+
+      if (isXhs) {
+        byline = byline.replace("关注", "")
+        excerpt = null
+      }
 
       const markdownContent = `**Source:** ${url}${byline ? `\n**Author:** ${byline}` : ""}${excerpt ? `\n\n**Summary:** ${excerpt}` : ""}\n
 ------

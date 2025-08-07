@@ -2,12 +2,26 @@
 
 import { Readability } from "@mozilla/readability"
 
+/**
+ * ReadbilityParser - Extracts readable content from HTML using Mozilla's Readability library
+ *
+ * Usage example with base URL:
+ * const parser = ReadbilityParser.getInstance()
+ * const result = parser.parse(htmlContent, {
+ *   baseUrl: window.location.origin // Use current page's origin as base URL
+ * })
+ */
 export default class ReadbilityParser {
   static getInstance(): ReadbilityParser {
     return new ReadbilityParser()
   }
 
-  parse(html: string): {
+  parse(
+    html: string,
+    options?: {
+      baseUrl?: string // Hint: Use window.location.origin or document.URL to get current page's base URL
+    }
+  ): {
     title: string
     content: string
     byline: string
@@ -15,6 +29,13 @@ export default class ReadbilityParser {
   } {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, "text/html")
+
+    // Set base URL if provided to resolve relative URLs correctly
+    if (options?.baseUrl) {
+      const baseElement = doc.createElement("base")
+      baseElement.href = options.baseUrl
+      doc.head.appendChild(baseElement)
+    }
 
     let title = doc.title || ""
     let content = ""

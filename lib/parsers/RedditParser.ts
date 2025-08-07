@@ -14,7 +14,9 @@ export default class RedditParser implements Parser {
   }
 
   static _parsePostPage(html: string): string {
-    const result = ReadbilityParser.getInstance().parse(html)
+    const result = ReadbilityParser.getInstance().parse(html, {
+      baseUrl: "https://www.reddit.com" // Use Reddit's base URL to resolve relative links
+    })
 
     // extract comments
     const parser = new DOMParser()
