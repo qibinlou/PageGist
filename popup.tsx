@@ -284,7 +284,8 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
           <CardTitle className="text-lg">PageGist</CardTitle>
         </div>
         <CardDescription>
-          Extract current webpage content as markdown
+          Extract current webpage content as markdown. Share with your AI
+          assistant to get better insights quicly.
         </CardDescription>
       </CardHeader>
 
@@ -401,7 +402,8 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
                 </div>
                 <p className="text-xs text-muted-foreground">
                   This link hosts the markdown content on a public paste service
-                  and can easily be shared with AI assistants such as ChatGPT or Gemini.
+                  and can easily be shared with AI assistants such as ChatGPT or
+                  Gemini.
                 </p>
               </CardContent>
             </Card>
