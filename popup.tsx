@@ -269,7 +269,7 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `webpage-content-zip-${new Date().toISOString()}.md`
+    a.download = `pagegist-${new Date().toISOString()}.md`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -281,7 +281,7 @@ ${contentAsText ?? MarkdownParser.getInstance().parse(content)}`
       <CardHeader className="px-0 pb-5">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Web Page Zipper</CardTitle>
+          <CardTitle className="text-lg">PageGist</CardTitle>
         </div>
         <CardDescription>
           Extract current webpage content as markdown

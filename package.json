@@ -1,9 +1,9 @@
 {
-  "name": "web-page-zipper",
-  "displayName": "Web page zipper",
-  "version": "0.0.1",
-  "description": "A basic Plasmo extension.",
-  "author": "Leo",
+  "name": "page-gist",
+  "displayName": "PageGist",
+  "version": "1.0.0",
+  "description": "Extract the most important context from the page you are viewing to share with your AI assistant, supporting Reddit, Twitter, Xiaohongshu and many other paywalled sites.",
+  "author": "Leo Lou",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
